@@ -399,7 +399,7 @@ function defaultModel() {
     brojilo: false,
     spd: { enabled: false, tip: "t2" },
     glavni: {
-      enabled: true,
+      enabled: false,
       tip: "mcb",
       polovi: "4P",
       struja: "63",

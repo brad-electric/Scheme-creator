@@ -268,7 +268,7 @@ function fillCoverSvg(model, svgEl, pageIndex, totalPages, schemaPageCount) {
     ["Dolaz", formatDolazShort(d)],
     [
       "Glavni prekidač",
-      g.enabled !== false
+      g.enabled === true
         ? `${g.polovi || "4P"} ${g.karakteristika || "C"}${g.struja || "63"}A`
         : "nema",
     ],
@@ -454,7 +454,7 @@ function drawIncomingAndMain(model, layout) {
   const ys = layout.mainYs;
   const mx = CAD.mainX;
   const g = model.glavni || {};
-  const hasGlavni = g.enabled !== false;
+  const hasGlavni = g.enabled === true;
   const poles = Math.min(polesFrom(g.polovi, 4), 4);
   const poleGap = CAD.busGap;
 
@@ -528,7 +528,7 @@ function drawContinuationBus(model, layout, pageNo) {
     parts.push(hline(left, ys[i], layout.busEnd, ys[i], i < 3 ? 2.6 : 1.35));
   });
   const afterLab =
-    model.glavni?.enabled !== false
+    model.glavni?.enabled === true
       ? escapeXml(model.glavni?.oznaka || "Q1")
       : "dolaza";
   parts.push(
