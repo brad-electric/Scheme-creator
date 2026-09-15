@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="hr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Jednopolka — jednopolne sheme razvodnih ormara</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-name">Jedno<span>polka</span></div>
+        <div class="brand-sub">Jednopolne sheme kućnih razvodnih ormara</div>
+      </div>
+      <div class="toolbar">
+        <button type="button" class="btn btn-ghost" id="btn-nova">Nova shema</button>
+        <button type="button" class="btn" id="btn-svg">Spremi SVG</button>
+        <button type="button" class="btn" id="btn-png">Spremi PNG</button>
+        <button type="button" class="btn" id="btn-pdf">Spremi PDF</button>
+        <button type="button" class="btn btn-primary" id="btn-print">Ispis</button>
+      </div>
+    </header>
+
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="tabs">
+          <button type="button" class="tab active" data-tab="tab-opis">Opis</button>
+          <button type="button" class="tab" data-tab="tab-forma">Ploča</button>
+          <button type="button" class="tab" data-tab="tab-baza">Baza</button>
+        </div>
+
+        <section id="tab-opis" class="tab-panel active">
+          <p class="hint">
+            Upiši opis ploče na hrvatskom. Program crta shemu i dijeli je na A4 listove
+            (ako FID-ovi ne stanu na jedan papir, nastavlja na sljedeći).
+          </p>
+          <textarea
+            id="opis-tekst"
+            placeholder="Trofazni dolaz 5x10 na glavni 4P 63A
+
+FID1 4P 40A 30mA: pećnica 16A Kuhinja, svjetlo 10A Kuhinja, utičnice 16A Kuhinja
+FID2 4P 40A 30mA: bojler 16A Kupaonica, klima 16A Dnevni
+FID3 ..."
+          ></textarea>
+          <div class="opis-actions">
+            <button type="button" class="btn btn-primary" id="btn-primijeni-opis">
+              Nacrtaj shemu
+            </button>
+            <button type="button" class="btn btn-ghost" id="btn-primjer">Učitaj primjer</button>
+          </div>
+          <p class="hint" style="margin-top:0.85rem">
+            Format:<br />
+            <code>Investitor: Ana Cus</code><br />
+            <code>Lokacija: Resetari 50 Kastav</code><br />
+            <code>odvodnik prenapona tip 2</code> ← SPD nakon glavnog<br />
+            <code>Direktno: štednjak 32A 3P Kuhinja</code> ← mimo FID-a<br />
+            <code>FID1 4P 40A 30mA: naziv 16A Prostorija, …</code>
+          </p>
+        </section>
+
+        <section id="tab-forma" class="tab-panel">
+          <div class="section">
+            <h3>Opći podaci</h3>
+            <div class="grid-2">
+              <label>Investitor <input id="investitor" type="text" placeholder="npr. Ana Cus" /></label>
+              <label>Lokacija <input id="lokacija" type="text" placeholder="npr. kuća, adresa" /></label>
+              <label>Početni broj kruga <input id="start-broj" type="number" min="1" value="1" /></label>
+              <label>Oznaka stezaljki <input id="stezaljka" type="text" value="X2" /></label>
+            </div>
+            <label class="check-row"><input type="checkbox" id="prikazi-stezaljke" /> Prikaži spojna mjesta (stezaljke X)</label>
+            <label class="check-row"><input type="checkbox" id="naslovna" checked /> Naslovna stranica (ispred sheme)</label>
+          </div>
+
+          <div class="section">
+            <h3>Dolaz</h3>
+            <div class="grid-2">
+              <label>Tip <select id="dolaz-tip"></select></label>
+              <label>Presjek <select id="dolaz-presjek"></select></label>
+            </div>
+            <label class="check-row"><input type="checkbox" id="brojilo" /> Brojilo energije</label>
+            <label class="check-row"><input type="checkbox" id="spd" /> Odvodnik prenapona (SPD)</label>
+            <label>SPD tip <select id="spd-tip"></select></label>
+          </div>
+
+          <div class="section">
+            <h3>Glavni prekidač</h3>
+            <div class="grid-2">
+              <label>Tip <select id="glavni-tip"></select></label>
+              <label>Polovi <select id="glavni-polovi"></select></label>
+              <label>Karakteristika <select id="glavni-kar"></select></label>
+              <label>Struja <select id="glavni-struja"></select></label>
+            </div>
+          </div>
+
+          <div class="section">
+            <h3>FID grupe i krugovi</h3>
+            <div id="fidovi-lista"></div>
+            <button type="button" class="btn btn-ghost" id="btn-dodaj-fid">+ Dodaj FID</button>
+          </div>
+        </section>
+
+        <section id="tab-baza" class="tab-panel">
+          <p class="hint">Komponente dostupne u generatoru (oznake u IEC stilu).</p>
+          <div class="baza-list" id="baza-pregled"></div>
+        </section>
+      </aside>
+
+      <main class="preview">
+        <div class="preview-bar">
+          <span id="stats">—</span>
+          <span>A4 landscape · automatski prelom listova</span>
+        </div>
+        <div class="preview-stage" id="shema-pages"></div>
+      </main>
+    </div>
+
+    <script src="vendor/jspdf.umd.min.js"></script>
+    <script src="js/baza-komponenti.js"></script>
+    <script src="js/parser.js"></script>
+    <script src="js/renderer.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+      // Pregled baze komponenti
+      (function fillBaza() {
+        const root = document.getElementById("baza-pregled");
+        const blocks = [
+          ["Dolazni kabeli", BAZA_KOMPONENTI.dolaz.tipovi],
+          ["Glavni prekidači / sklopke", BAZA_KOMPONENTI.glavni.tipovi],
+          ["FID / RCD", BAZA_KOMPONENTI.fid.tipovi],
+          ["Osigurači / MCB", BAZA_KOMPONENTI.osigurac.tipovi],
+          ["SPD", BAZA_KOMPONENTI.spd.tipovi],
+          ["Potrošači / krugovi", BAZA_KOMPONENTI.potrosac.tipovi],
+        ];
+        root.innerHTML = blocks
+          .map(
+            ([title, items]) => `
+          <details open>
+            <summary>${title}</summary>
+            <ul>${items.map((i) => `<li>${i.label}${i.defaultStruja ? ` (def. ${i.defaultStruja}A)` : ""}</li>`).join("")}</ul>
+          </details>`
+          )
+          .join("");
+      })();
+    </script>
+  </body>
+</html>
