@@ -34,7 +34,8 @@ function parseOpis(tekst) {
     model.dolaz.tip = "1f3";
   }
 
-  // Glavni prekidač
+  // Glavni prekidač — samo ako je eksplicitno u opisu
+  model.glavni.enabled = false;
   const glavniMatch = full.match(
     /glavn\w*\s*(?:prekida[čc]|sklopk\w*|osigura[čc])?\s*(?:od\s*)?(\d+P(?:\+N)?|[1234]P(?:\+N)?)\s*(?:od\s*)?(\d+)\s*A/i
   ) ||
@@ -42,13 +43,15 @@ function parseOpis(tekst) {
       /glavn\w*[^\d]{0,40}?(\d+P(?:\+N)?)\s*(?:od\s*)?(\d+)\s*A/i
     ) ||
     full.match(
-      /(?:prekida[čc]|sklopk\w*)\s*(?:glavn\w*)?\s*(?:od\s*)?(\d+P(?:\+N)?)\s*(?:od\s*)?(\d+)\s*A/i
+      /(?:prekida[čc]|sklopk\w*)\s*(?:glavn\w*)\s*(?:od\s*)?(\d+P(?:\+N)?)\s*(?:od\s*)?(\d+)\s*A/i
     );
 
   if (glavniMatch) {
+    model.glavni.enabled = true;
     model.glavni.polovi = normalizePolovi(glavniMatch[1]);
     model.glavni.struja = glavniMatch[2];
-  } else {
+  } else if (/\bglavn\w*/i.test(full)) {
+    model.glavni.enabled = true;
     const alt = full.match(/glavn\w*[^\d]{0,30}?(\d+)\s*A/i);
     if (alt) model.glavni.struja = alt[1];
   }
@@ -65,8 +68,8 @@ function parseOpis(tekst) {
   }
 
   // Karakteristika glavnog (B/C/D)
-  const karG = full.match(/glavn\w*[^\n]{0,40}?\b([BCD])\s*\d+\s*A/i) || full.match(/\b([BCD])\s*(\d+)\s*A\b/i);
-  if (karG && /glavn/i.test(full)) model.glavni.karakteristika = karG[1].toUpperCase();
+  const karG = full.match(/glavn\w*[^\n]{0,40}?\b([BCD])\s*\d+\s*A/i);
+  if (karG && model.glavni.enabled) model.glavni.karakteristika = karG[1].toUpperCase();
 
   // Direktni krugovi — s sabirnice NAKON glavnog, mimo FID-a
   model.direktni = extractDirektni(tekst);
@@ -396,6 +399,7 @@ function defaultModel() {
     brojilo: false,
     spd: { enabled: false, tip: "t2" },
     glavni: {
+      enabled: true,
       tip: "mcb",
       polovi: "4P",
       struja: "63",

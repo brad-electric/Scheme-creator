@@ -266,7 +266,12 @@ function fillCoverSvg(model, svgEl, pageIndex, totalPages, schemaPageCount) {
   );
   const rows = [
     ["Dolaz", formatDolazShort(d)],
-    ["Glavni prekidač", `${g.polovi || "4P"} ${g.karakteristika || "C"}${g.struja || "63"}A`],
+    [
+      "Glavni prekidač",
+      g.enabled !== false
+        ? `${g.polovi || "4P"} ${g.karakteristika || "C"}${g.struja || "63"}A`
+        : "nema",
+    ],
     ["SPD", model.spd?.enabled ? spdTipLabel(model.spd.tip) : "nema"],
     ["Zaštita", `${nDir ? nDir + " direktno · " : ""}${nFid} FID · ${nKrug} krugova`],
     ["Shema", `${schemaPageCount} A4 list${schemaPageCount === 1 ? "" : "a"} (+ naslovna)`],
@@ -449,6 +454,7 @@ function drawIncomingAndMain(model, layout) {
   const ys = layout.mainYs;
   const mx = CAD.mainX;
   const g = model.glavni || {};
+  const hasGlavni = g.enabled !== false;
   const poles = Math.min(polesFrom(g.polovi, 4), 4);
   const poleGap = CAD.busGap;
 
@@ -463,19 +469,33 @@ function drawIncomingAndMain(model, layout) {
   const x0Y = boxTop + boxH + 20;
   const dolazEnd = Math.min(x0Y + 52, CAD.pageH - 40);
 
-  parts.push(symbolMainVertical(mx, boxTop, poles, poleGap, boxH));
+  if (hasGlavni) {
+    parts.push(symbolMainVertical(mx, boxTop, poles, poleGap, boxH));
+    for (let i = 0; i < 4; i++) {
+      parts.push(hline(mx + 20, ys[i], CAD.busStart, ys[i], 1.3));
+      parts.push(`<circle cx="${CAD.busStart}" cy="${ys[i]}" r="2.2" fill="#fff" stroke="${CAD.ink}" stroke-width="1.15"/>`);
+    }
+    parts.push(vline(mx + 28, x0Y, ys[4], 1.15));
+    parts.push(hline(mx + 28, ys[4], CAD.busStart, ys[4], 1.2));
+    parts.push(`<circle cx="${CAD.busStart}" cy="${ys[4]}" r="2" fill="#fff" stroke="${CAD.ink}" stroke-width="1.1"/>`);
 
-  for (let i = 0; i < 4; i++) {
-    parts.push(hline(mx + 20, ys[i], CAD.busStart, ys[i], 1.3));
-    parts.push(`<circle cx="${CAD.busStart}" cy="${ys[i]}" r="2.2" fill="#fff" stroke="${CAD.ink}" stroke-width="1.15"/>`);
+    parts.push(`<text x="${mx}" y="${boxTop - 6}" text-anchor="middle" class="t-label">${escapeXml(g.oznaka || "Q1")}</text>`);
+    parts.push(`<text x="${mx + 26}" y="${x0Y - 16}" class="t-label">Glavni prekidač</text>`);
+    parts.push(`<text x="${mx + 26}" y="${x0Y - 4}" class="t-tiny">${g.polovi || "4P"} ${g.karakteristika || "C"}${g.struja || "63"}A</text>`);
+    parts.push(vline(mx, boxTop + boxH, x0Y, 1.25));
+  } else {
+    // Bez glavnog — dolaz ide direktno na sabirnicu
+    for (let i = 0; i < 4; i++) {
+      const px = mx - 12 + i * 8;
+      parts.push(vline(px, ys[i], x0Y, 1.15));
+      parts.push(`<circle cx="${px}" cy="${ys[i]}" r="2.2" fill="#fff" stroke="${CAD.ink}" stroke-width="1.15"/>`);
+      parts.push(hline(px, ys[i], CAD.busStart, ys[i], 1.2));
+      parts.push(`<circle cx="${CAD.busStart}" cy="${ys[i]}" r="2.2" fill="#fff" stroke="${CAD.ink}" stroke-width="1.15"/>`);
+    }
+    parts.push(vline(mx + 28, x0Y, ys[4], 1.15));
+    parts.push(hline(mx + 28, ys[4], CAD.busStart, ys[4], 1.2));
+    parts.push(`<circle cx="${CAD.busStart}" cy="${ys[4]}" r="2" fill="#fff" stroke="${CAD.ink}" stroke-width="1.1"/>`);
   }
-  parts.push(vline(mx + 28, x0Y, ys[4], 1.15));
-  parts.push(hline(mx + 28, ys[4], CAD.busStart, ys[4], 1.2));
-  parts.push(`<circle cx="${CAD.busStart}" cy="${ys[4]}" r="2" fill="#fff" stroke="${CAD.ink}" stroke-width="1.1"/>`);
-
-  parts.push(`<text x="${mx}" y="${boxTop - 6}" text-anchor="middle" class="t-label">${escapeXml(g.oznaka || "Q1")}</text>`);
-  parts.push(`<text x="${mx + 26}" y="${x0Y - 16}" class="t-label">Glavni prekidač</text>`);
-  parts.push(`<text x="${mx + 26}" y="${x0Y - 4}" class="t-tiny">${g.polovi || "4P"} ${g.karakteristika || "C"}${g.struja || "63"}A</text>`);
 
   parts.push(hline(mx - 18, x0Y, mx + 18, x0Y, 1.25));
   for (let i = 0; i < 4; i++) {
@@ -483,7 +503,6 @@ function drawIncomingAndMain(model, layout) {
     parts.push(`<circle cx="${sx}" cy="${x0Y}" r="2.6" fill="#fff" stroke="${CAD.ink}" stroke-width="1.1"/>`);
     parts.push(`<line x1="${sx - 3}" y1="${x0Y - 3}" x2="${sx + 3}" y2="${x0Y + 3}" stroke="${CAD.ink}" stroke-width="1"/>`);
   }
-  parts.push(vline(mx, boxTop + boxH, x0Y, 1.25));
   parts.push(`<text x="${mx - 24}" y="${x0Y + 4}" text-anchor="end" class="t-label">X0</text>`);
 
   parts.push(vline(mx, x0Y, dolazEnd, 1.4));
@@ -508,8 +527,12 @@ function drawContinuationBus(model, layout, pageNo) {
     parts.push(`<text x="${left - 6}" y="${ys[i] + 3}" text-anchor="end" class="t-phase">${lab}</text>`);
     parts.push(hline(left, ys[i], layout.busEnd, ys[i], i < 3 ? 2.6 : 1.35));
   });
+  const afterLab =
+    model.glavni?.enabled !== false
+      ? escapeXml(model.glavni?.oznaka || "Q1")
+      : "dolaza";
   parts.push(
-    `<text x="${left + 8}" y="${ys[0] - 10}" class="t-label">Nastavak sabirnice (nakon ${escapeXml(model.glavni?.oznaka || "Q1")}) · list ${pageNo}</text>`
+    `<text x="${left + 8}" y="${ys[0] - 10}" class="t-label">Nastavak sabirnice (nakon ${afterLab}) · list ${pageNo}</text>`
   );
   // strelica "dolazi s prethodnog lista"
   parts.push(

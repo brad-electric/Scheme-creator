@@ -60,13 +60,25 @@ FID1 4P 25A 30mA tip A: pećnica 16A Kuhinja, svjetlo 10A Kuhinja, utičnice 16A
 
 const model = ctx.parseOpis(opis);
 assert("dolaz 5x10", model.dolaz.tip === "3f5" && model.dolaz.presjek === "10", JSON.stringify(model.dolaz));
-assert("glavni 4P 63A", model.glavni.polovi === "4P" && model.glavni.struja === "63", JSON.stringify(model.glavni));
+assert("glavni 4P 63A", model.glavni.enabled === true && model.glavni.polovi === "4P" && model.glavni.struja === "63", JSON.stringify(model.glavni));
 assert("1 FID", model.fidovi.length === 1, String(model.fidovi.length));
 assert("FID 25A / 30mA", model.fidovi[0].struja === "25" && model.fidovi[0].diferencijalna === "30");
 assert("3 kruga", model.fidovi[0].krugovi.length === 3, String(model.fidovi[0].krugovi.length));
 assert("pećnica 16A", model.fidovi[0].krugovi[0].struja === "16" && /pe[cćč]nic/i.test(model.fidovi[0].krugovi[0].naziv));
 assert("prostorija Kuhinja", model.fidovi[0].krugovi[0].prostorija === "Kuhinja");
 assert("nema default direktnog", !(model.direktni && model.direktni.length), String(model.direktni?.length));
+
+console.log("\n=== Test: bez glavnog prekidača ===");
+const noG = ctx.parseOpis(`Investitor: Ana Cus
+Trofazni dolaz 5x10
+Direktno: podrum 32A 3P Podrum
+FID1 4P 40A 30mA: utičnice 16A Ostava`);
+assert("glavni isključen", noG.glavni.enabled === false, JSON.stringify(noG.glavni));
+const noGKids = [];
+ctx.renderShema(noG, { innerHTML: "", appendChild(el) { noGKids.push(el); } });
+assert("nema natpisa Glavni prekidač", !noGKids.some((k) => /t-label">Glavni prekidač</.test(k.innerHTML)));
+assert("ima Dolaz", noGKids.some((k) => />Dolaz</.test(k.innerHTML)));
+assert("naslovna kaže nema glavnog", noGKids.some((k) => /nema/.test(k.innerHTML)));
 
 console.log("\n=== Test: direktni (mimo FID) ===");
 const dirOpis = `Trofazni dolaz 5x10 na glavni prekidač 4P 63A

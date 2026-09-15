@@ -111,6 +111,7 @@ function renderForm() {
 
   document.getElementById("brojilo").checked = !!model.brojilo;
   document.getElementById("spd").checked = !!model.spd?.enabled;
+  document.getElementById("glavni-enabled").checked = model.glavni?.enabled !== false;
 
   const spdTip = document.getElementById("spd-tip");
   spdTip.innerHTML = BAZA_KOMPONENTI.spd.tipovi
@@ -176,6 +177,10 @@ function renderForm() {
   document.getElementById("spd").onchange = (e) => {
     model.spd.enabled = e.target.checked;
     document.getElementById("spd-tip").disabled = !e.target.checked;
+    redraw();
+  };
+  document.getElementById("glavni-enabled").onchange = (e) => {
+    model.glavni.enabled = e.target.checked;
     redraw();
   };
 
@@ -339,8 +344,12 @@ function updateStats(nPages) {
   const nKrug =
     nDir + model.fidovi.reduce((a, f) => a + (f.krugovi?.length || 0), 0);
   const pages = nPages || document.querySelectorAll(".shema-page").length || 1;
+  const gPart =
+    model.glavni?.enabled !== false
+      ? ` · glavni ${model.glavni.polovi} ${model.glavni.struja}A`
+      : " · bez glavnog";
   document.getElementById("stats").textContent =
-    `${model.naslovna !== false ? "naslovna · " : ""}${nDir ? nDir + " direktno · " : ""}${nFid} FID · ${nKrug} krugova · ${pages} A4 list${pages === 1 ? "" : "a"} · glavni ${model.glavni.polovi} ${model.glavni.struja}A`;
+    `${model.naslovna !== false ? "naslovna · " : ""}${nDir ? nDir + " direktno · " : ""}${nFid} FID · ${nKrug} krugova · ${pages} A4 list${pages === 1 ? "" : "a"}${gPart}`;
 }
 
 function exportSvg() {
